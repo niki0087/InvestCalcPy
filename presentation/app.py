@@ -15,7 +15,7 @@ ScreenManager:
     Screen:
         name: 'main'
         MDScreen:
-            md_bg_color: 0.961, 0.965, 0.980, 1  # #F5F6FA
+            md_bg_color: 1, 1, 1, 1
 
             MDTopAppBar:
                 id: toolbar
@@ -23,7 +23,7 @@ ScreenManager:
                 pos_hint: {'top': 1}
                 elevation: 0
                 md_bg_color: 1, 1, 1, 1
-                specific_text_color: 0.118, 0.118, 0.137, 1  # #1E1E23
+                specific_text_color: 0.118, 0.118, 0.137, 1
 
             MDBoxLayout:
                 orientation: 'vertical'
@@ -44,7 +44,7 @@ ScreenManager:
                     text: 'Усреднение • Дивиденды • Прибыль'
                     halign: 'center'
                     theme_text_color: 'Custom'
-                    text_color: 0.467, 0.471, 0.529, 1  # #777887
+                    text_color: 0.467, 0.471, 0.529, 1
                     font_size: dp(14)
 
                 Widget:
@@ -55,7 +55,7 @@ ScreenManager:
                     size_hint_x: 0.7
                     pos_hint: {'center_x': 0.5}
                     height: dp(52)
-                    md_bg_color: 0.388, 0.447, 0.902, 1  # #6372E6
+                    md_bg_color: 0.388, 0.447, 0.902, 1
                     on_release: app.open_average_calculator()
 
                     MDButtonText:
@@ -65,17 +65,18 @@ ScreenManager:
                         bold: True
 
                 MDButton:
-                    style: "outlined"
+                    style: "filled"
                     size_hint_x: 0.7
                     pos_hint: {'center_x': 0.5}
-                    height: dp(48)
-                    line_color: 0.388, 0.447, 0.902, 1
-                    on_release: app.show_under_construction()
+                    height: dp(52)
+                    md_bg_color: 0.388, 0.447, 0.902, 1
+                    on_release: app.open_dividend_calculator()
 
                     MDButtonText:
                         text: 'Дивиденды'
                         theme_text_color: 'Custom'
-                        text_color: 0.388, 0.447, 0.902, 1
+                        text_color: 1, 1, 1, 1
+                        bold: True
 
                 MDButton:
                     style: "outlined"
@@ -93,6 +94,10 @@ ScreenManager:
     Screen:
         name: 'average'
         id: average_screen
+
+    Screen:
+        name: 'dividend'
+        id: dividend_screen
 '''
 
 
@@ -119,13 +124,28 @@ class InvestCalcApp(MDApp):
 
         use_case = CalculateAverageUseCase()
         presenter = AveragePresenter(use_case)
-        average_view = AverageView(presenter=presenter)
-        presenter.view = average_view
+        view = AverageView(presenter=presenter)
+        presenter.view = view
 
         screen = self.root.get_screen('average')
         screen.clear_widgets()
-        screen.add_widget(average_view)
+        screen.add_widget(view)
         self.root.current = 'average'
+
+    def open_dividend_calculator(self):
+        from presentation.views.dividend_view import DividendView
+        from presentation.presenters.dividend_presenter import DividendPresenter
+        from domain.use_cases.calculate_dividends import CalculateDividendsUseCase
+
+        use_case = CalculateDividendsUseCase()
+        presenter = DividendPresenter(use_case)
+        view = DividendView(presenter=presenter)
+        presenter.view = view
+
+        screen = self.root.get_screen('dividend')
+        screen.clear_widgets()
+        screen.add_widget(view)
+        self.root.current = 'dividend'
 
     def go_back(self):
         self.root.current = 'main'
