@@ -23,7 +23,7 @@ class AveragePresenter:
         self._view = value
 
     def add_deal(self, ticker: str, price_text: str, quantity_text: str,
-                 commission_text: str, commission_type: str):
+                 commission_text: str):
         errors = []
         if not ticker:
             errors.append("Введите тикер")
@@ -36,20 +36,14 @@ class AveragePresenter:
         if quantity is None:
             errors.append("Количество должно быть целым положительным числом")
 
-        commission_value = validate_positive_number(commission_text)
-        if commission_value is None:
-            commission_value = Decimal('0')
+        commission = validate_positive_number(commission_text)
+        if commission is None:
+            commission = Decimal('0')
 
         if errors:
             if self._view:
                 self._view.show_error(". ".join(errors))
             return
-
-        deal_amount = price * quantity
-        if commission_type == "percent":
-            commission = deal_amount * (commission_value / Decimal('100'))
-        else:
-            commission = commission_value
 
         deal = Deal(
             ticker=ticker,

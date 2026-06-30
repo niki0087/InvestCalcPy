@@ -2,144 +2,198 @@
 
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
-from kivymd.uix.textfield import MDTextField, MDTextFieldHintText, MDTextFieldHelperText
+from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from kivymd.uix.button import MDButton, MDButtonText
-from kivymd.uix.segmentedbutton import MDSegmentedButton, MDSegmentedButtonItem
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
-from kivy.logger import Logger
+
+BG_SCREEN = (1, 1, 1, 1)
+TEXT_PRIMARY = (0.118, 0.118, 0.137, 1)
+TEXT_SECONDARY = (0.467, 0.471, 0.529, 1)
+TEXT_HINT = (0.690, 0.694, 0.749, 1)
+ACCENT = (0.388, 0.447, 0.902, 1)
+RED = (0.957, 0.263, 0.212, 1)
+
+HEADER_H = dp(48)
+FOOTER_H = dp(56)
+TOP_GAP = dp(36)
 
 
-class AverageView(ScrollView):
-    """Экран калькулятора усреднения с прокруткой."""
+class AverageView(MDBoxLayout):
 
     def __init__(self, presenter=None, **kwargs):
         super().__init__(**kwargs)
         self.presenter = presenter
-        self._commission_type = "percent"
+        self.orientation = 'vertical'
+        self.md_bg_color = BG_SCREEN
+        self.padding = (0, 0, 0, 0)
+        self.spacing = 0
 
-        self.container = MDBoxLayout(
+        self._build_header()
+        self._build_body()
+        self._build_footer()
+
+    def _build_header(self):
+        bar = MDBoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=HEADER_H,
+            spacing=dp(4),
+            padding=(dp(8), 0, dp(16), 0),
+            md_bg_color=BG_SCREEN,
+        )
+
+        back_btn = MDButton(
+            MDButtonText(
+                text="<",
+                theme_text_color="Custom",
+                text_color=ACCENT,
+                font_size=dp(24),
+            ),
+            style="text",
+            size_hint=(None, None),
+            size=(dp(48), dp(48)),
+            on_release=lambda x: self._on_back(),
+        )
+
+        bar.add_widget(back_btn)
+        bar.add_widget(MDLabel(
+            text="Усреднение",
+            halign="left",
+            valign="center",
+            theme_text_color="Custom",
+            text_color=TEXT_PRIMARY,
+            font_size=dp(18),
+            bold=True,
+            size_hint_x=1,
+        ))
+        self.add_widget(bar)
+
+    def _build_body(self):
+        self.scroll = ScrollView(bar_width=0, do_scroll_x=False)
+        self.scroll_container = MDBoxLayout(
             orientation='vertical',
-            padding=dp(16),
-            spacing=dp(8),
+            padding=(dp(16), TOP_GAP, dp(16), dp(8)),
+            spacing=dp(12),
             size_hint_y=None,
         )
-        self.container.bind(minimum_height=self.container.setter('height'))
-        self.add_widget(self.container)
+        self.scroll_container.bind(minimum_height=self.scroll_container.setter('height'))
 
-        self.init_ui()
+        self._build_input_section()
+        self.scroll_container.add_widget(self._accent_button("+ Добавить сделку", self._on_add_deal))
+        self._build_deals_section()
+        self._build_result_section()
 
-    def init_ui(self):
-        self.container.add_widget(MDLabel(
-            text="Калькулятор усреднения",
-            halign="center",
-            theme_text_color="Primary",
-            size_hint_y=None,
-            height=dp(40),
-        ))
+        self.scroll.add_widget(self.scroll_container)
+        self.add_widget(self.scroll)
 
-        self.ticker_input = MDTextField(
-            MDTextFieldHintText(text="Тикер (например, SBER)"),
-            mode="outlined",
-            size_hint_x=1,
-            size_hint_y=None,
-            height=dp(56),
-        )
-        self.container.add_widget(self.ticker_input)
+    def _build_input_section(self):
+        self.scroll_container.add_widget(self._section_title("ТИКЕР"))
+        self.ticker_input = self._text_field("Например, SBER")
+        self.scroll_container.add_widget(self.ticker_input)
 
-        self.price_input = MDTextField(
-            MDTextFieldHintText(text="Цена за акцию"),
-            mode="outlined",
-            size_hint_x=1,
-            size_hint_y=None,
-            height=dp(56),
-            input_filter="float",
-        )
-        self.container.add_widget(self.price_input)
+        self.scroll_container.add_widget(self._section_title("ЦЕНА ЗА АКЦИЮ"))
+        self.price_input = self._text_field("0.00")
+        self.scroll_container.add_widget(self.price_input)
 
-        self.quantity_input = MDTextField(
-            MDTextFieldHintText(text="Количество (лоты)"),
-            mode="outlined",
-            size_hint_x=1,
-            size_hint_y=None,
-            height=dp(56),
-            input_filter="int",
-        )
-        self.container.add_widget(self.quantity_input)
+        self.scroll_container.add_widget(self._section_title("КОЛИЧЕСТВО (ЛОТЫ)"))
+        self.quantity_input = self._text_field("0")
+        self.scroll_container.add_widget(self.quantity_input)
 
-        self.commission_type_switcher = MDSegmentedButton(
-            size_hint_x=1,
-            size_hint_y=None,
-            height=dp(40),
-        )
-        percent_btn = MDSegmentedButtonItem(text="Комиссия %")
-        rubles_btn = MDSegmentedButtonItem(text="Комиссия ₽")
-        self.commission_type_switcher.add_widget(percent_btn)
-        self.commission_type_switcher.add_widget(rubles_btn)
-        self.container.add_widget(self.commission_type_switcher)
+        self.scroll_container.add_widget(self._section_title("КОМИССИЯ (₽, ОПЦИОНАЛЬНО)"))
+        self.commission_input = self._text_field("0.00")
+        self.scroll_container.add_widget(self.commission_input)
 
-        self.commission_input = MDTextField(
-            MDTextFieldHintText(text="Комиссия (%)"),
-            mode="outlined",
-            size_hint_x=1,
-            size_hint_y=None,
-            height=dp(56),
-            input_filter="float",
-            text="0.05",
-        )
-        self.container.add_widget(self.commission_input)
-
-        self.container.add_widget(MDButton(
-            MDButtonText(text="Добавить сделку"),
-            style="filled",
-            size_hint_x=1,
-            size_hint_y=None,
-            height=dp(48),
-            on_release=lambda x: self._on_add_deal(),
-        ))
-
+    def _build_deals_section(self):
         self.deals_label = MDLabel(
             text="Сделки: 0",
-            theme_text_color="Secondary",
+            theme_text_color="Custom",
+            text_color=TEXT_SECONDARY,
             size_hint_y=None,
-            height=dp(30),
+            height=dp(24),
+            font_size=dp(12),
+            bold=True,
         )
-        self.container.add_widget(self.deals_label)
+        self.scroll_container.add_widget(self.deals_label)
 
         self.deals_container = MDBoxLayout(
             orientation='vertical',
             spacing=dp(4),
             size_hint_y=None,
-            height=dp(60),
+            height=dp(20),
         )
-        self.container.add_widget(self.deals_container)
+        self.scroll_container.add_widget(self.deals_container)
 
-        self.container.add_widget(MDButton(
-            MDButtonText(text="Рассчитать среднюю"),
-            style="filled",
-            size_hint_x=1,
+    def _build_result_section(self):
+        self.result_title = MDLabel(
+            text="Результаты",
+            theme_text_color="Custom",
+            text_color=TEXT_SECONDARY,
             size_hint_y=None,
-            height=dp(48),
-            on_release=lambda x: self._on_calculate(),
-        ))
+            height=dp(24),
+            font_size=dp(12),
+            bold=True,
+        )
+        self.scroll_container.add_widget(self.result_title)
 
         self.result_container = MDBoxLayout(
             orientation='vertical',
-            spacing=dp(4),
+            spacing=dp(2),
             size_hint_y=None,
-            height=dp(120),
+            height=dp(20),
         )
-        self.container.add_widget(self.result_container)
+        self.scroll_container.add_widget(self.result_container)
 
-        self.container.add_widget(MDButton(
-            MDButtonText(text="Назад"),
-            style="text",
+    def _build_footer(self):
+        bar = MDBoxLayout(
+            size_hint_y=None,
+            height=FOOTER_H,
+            padding=(dp(16), dp(4), dp(16), dp(4)),
+            md_bg_color=BG_SCREEN,
+        )
+        bar.add_widget(MDButton(
+            MDButtonText(text="Рассчитать среднюю", bold=True),
+            style="filled",
+            size_hint_x=1,
+            height=dp(48),
+            md_bg_color=ACCENT,
+            on_release=lambda x: self._on_calculate(),
+        ))
+        self.add_widget(bar)
+
+    # ─── HELPERS ────────────────────────────────────────────────
+    def _text_field(self, hint):
+        return MDTextField(
+            MDTextFieldHintText(text=hint),
+            mode="outlined",
             size_hint_x=1,
             size_hint_y=None,
-            height=dp(40),
-            on_release=lambda x: self._on_back(),
-        ))
+            height=dp(48),
+        )
 
+    def _section_title(self, text):
+        return MDLabel(
+            text=text,
+            theme_text_color="Custom",
+            text_color=TEXT_SECONDARY,
+            size_hint_y=None,
+            height=dp(20),
+            font_size=dp(10),
+            bold=True,
+        )
+
+    def _accent_button(self, text, callback):
+        return MDButton(
+            MDButtonText(text=text, bold=True),
+            style="filled",
+            size_hint_x=1,
+            size_hint_y=None,
+            height=dp(44),
+            md_bg_color=ACCENT,
+            on_release=lambda x: callback(),
+        )
+
+    # ─── ACTIONS ────────────────────────────────────────────────
     def _on_add_deal(self):
         if self.presenter:
             self.presenter.add_deal(
@@ -147,7 +201,6 @@ class AverageView(ScrollView):
                 price_text=self.price_input.text,
                 quantity_text=self.quantity_input.text,
                 commission_text=self.commission_input.text,
-                commission_type=self._commission_type,
             )
 
     def _on_calculate(self):
@@ -158,57 +211,98 @@ class AverageView(ScrollView):
         from kivymd.app import MDApp
         MDApp.get_running_app().go_back()
 
-    def update_deals_list(self, deals_data: list):
+    # ─── UPDATE UI ──────────────────────────────────────────────
+    def update_deals_list(self, deals_data):
         self.deals_container.clear_widgets()
         self.deals_label.text = f"Сделки: {len(deals_data)}"
-        for i, deal in enumerate(deals_data):
-            card = MDBoxLayout(
+        total = 0
+        for i, d in enumerate(deals_data):
+            row = MDBoxLayout(
                 orientation='horizontal',
                 size_hint_y=None,
-                height=dp(32),
-                spacing=dp(8),
+                height=dp(26),
+                spacing=dp(4),
             )
-            card.add_widget(MDLabel(text=deal['ticker'], size_hint_x=0.2))
-            card.add_widget(MDLabel(text=f"×{deal['quantity']}", size_hint_x=0.15))
-            card.add_widget(MDLabel(text=f"@{deal['price']}", size_hint_x=0.3))
-            card.add_widget(MDLabel(text=f"ком.{deal['commission']}", size_hint_x=0.2))
-            card.add_widget(MDButton(
-                MDButtonText(text="✕"),
+            row.add_widget(MDLabel(
+                text=d['ticker'],
+                size_hint_x=0.22,
+                theme_text_color="Custom",
+                text_color=TEXT_PRIMARY,
+                bold=True,
+                font_size=dp(12),
+            ))
+            row.add_widget(MDLabel(
+                text=f"×{d['quantity']} @{d['price']}",
+                size_hint_x=0.38,
+                theme_text_color="Custom",
+                text_color=TEXT_SECONDARY,
+                font_size=dp(10),
+            ))
+            row.add_widget(MDLabel(
+                text=f"ком.{d['commission']}",
+                size_hint_x=0.25,
+                theme_text_color="Custom",
+                text_color=TEXT_HINT,
+                font_size=dp(9),
+            ))
+            row.add_widget(MDButton(
+                MDButtonText(text="✕", theme_text_color="Custom", text_color=RED),
                 style="text",
                 size_hint_x=0.15,
                 on_release=lambda x, idx=i: self._on_remove_deal(idx),
             ))
-            self.deals_container.add_widget(card)
+            self.deals_container.add_widget(row)
+            total += dp(26)
+        self.deals_container.height = max(dp(20), total)
 
-    def _on_remove_deal(self, index: int):
+    def _on_remove_deal(self, index):
         if self.presenter:
             self.presenter.remove_deal(index)
 
-    def show_result(self, result: dict):
+    def show_result(self, result):
         self.result_container.clear_widgets()
-        self.result_container.add_widget(MDLabel(
-            text="Результаты:",
-            theme_text_color="Primary",
-            size_hint_y=None,
-            height=dp(24),
-        ))
+        total = 0
         for label, value in result.items():
-            row = MDBoxLayout(orientation='horizontal', size_hint_y=None, height=dp(22))
-            row.add_widget(MDLabel(text=label, size_hint_x=0.6, theme_text_color="Secondary"))
-            row.add_widget(MDLabel(text=str(value), size_hint_x=0.4, halign="right"))
+            row = MDBoxLayout(
+                orientation='horizontal',
+                size_hint_y=None,
+                height=dp(20),
+                spacing=dp(4),
+            )
+            row.add_widget(MDLabel(
+                text=label,
+                size_hint_x=0.55,
+                theme_text_color="Custom",
+                text_color=TEXT_SECONDARY,
+                font_size=dp(11),
+            ))
+            row.add_widget(MDLabel(
+                text=str(value),
+                size_hint_x=0.45,
+                halign="right",
+                theme_text_color="Custom",
+                text_color=TEXT_PRIMARY,
+                bold=True,
+                font_size=dp(12),
+            ))
             self.result_container.add_widget(row)
+            total += dp(20)
+        self.result_container.height = max(dp(20), total)
 
-    def show_error(self, message: str):
+    def show_error(self, message):
         self.result_container.clear_widgets()
         self.result_container.add_widget(MDLabel(
-            text=f"Ошибка: {message}",
-            theme_text_color="Error",
+            text=f"⚠ {message}",
+            theme_text_color="Custom",
+            text_color=RED,
             size_hint_y=None,
-            height=dp(24),
+            height=dp(20),
+            font_size=dp(12),
         ))
+        self.result_container.height = dp(24)
 
     def clear_inputs(self):
         self.ticker_input.text = ""
         self.price_input.text = ""
         self.quantity_input.text = ""
-        self.commission_input.text = "0.05"
+        self.commission_input.text = ""

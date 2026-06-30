@@ -15,31 +15,37 @@ ScreenManager:
     Screen:
         name: 'main'
         MDScreen:
-            md_bg_color: app.theme_cls.backgroundColor
+            md_bg_color: 0.961, 0.965, 0.980, 1  # #F5F6FA
 
             MDTopAppBar:
                 id: toolbar
                 title: "InvestCalc"
                 pos_hint: {'top': 1}
-                elevation: 2
+                elevation: 0
+                md_bg_color: 1, 1, 1, 1
+                specific_text_color: 0.118, 0.118, 0.137, 1  # #1E1E23
 
             MDBoxLayout:
                 orientation: 'vertical'
-                padding: dp(20)
-                spacing: dp(12)
-                pos_hint: {'center_y': 0.6}
+                padding: dp(24)
+                spacing: dp(16)
+                pos_hint: {'center_y': 0.55}
                 size_hint_y: 0.6
 
                 MDLabel:
                     text: 'Калькулятор'
                     halign: 'center'
-                    theme_text_color: 'Primary'
-                    font_size: dp(24)
+                    theme_text_color: 'Custom'
+                    text_color: 0.118, 0.118, 0.137, 1
+                    font_size: dp(28)
+                    bold: True
 
                 MDLabel:
                     text: 'Усреднение • Дивиденды • Прибыль'
                     halign: 'center'
-                    theme_text_color: 'Secondary'
+                    theme_text_color: 'Custom'
+                    text_color: 0.467, 0.471, 0.529, 1  # #777887
+                    font_size: dp(14)
 
                 Widget:
                     size_hint_y: 0.05
@@ -48,28 +54,41 @@ ScreenManager:
                     style: "filled"
                     size_hint_x: 0.7
                     pos_hint: {'center_x': 0.5}
+                    height: dp(52)
+                    md_bg_color: 0.388, 0.447, 0.902, 1  # #6372E6
                     on_release: app.open_average_calculator()
 
                     MDButtonText:
                         text: 'Калькулятор усреднения'
+                        theme_text_color: 'Custom'
+                        text_color: 1, 1, 1, 1
+                        bold: True
 
                 MDButton:
                     style: "outlined"
                     size_hint_x: 0.7
                     pos_hint: {'center_x': 0.5}
+                    height: dp(48)
+                    line_color: 0.388, 0.447, 0.902, 1
                     on_release: app.show_under_construction()
 
                     MDButtonText:
                         text: 'Дивиденды'
+                        theme_text_color: 'Custom'
+                        text_color: 0.388, 0.447, 0.902, 1
 
                 MDButton:
                     style: "outlined"
                     size_hint_x: 0.7
                     pos_hint: {'center_x': 0.5}
+                    height: dp(48)
+                    line_color: 0.388, 0.447, 0.902, 1
                     on_release: app.show_under_construction()
 
                     MDButtonText:
                         text: 'Прибыль/убыток'
+                        theme_text_color: 'Custom'
+                        text_color: 0.388, 0.447, 0.902, 1
 
     Screen:
         name: 'average'
@@ -85,7 +104,6 @@ class InvestCalcApp(MDApp):
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
-        self.theme_cls.accent_palette = "Green"
         self.theme_cls.theme_style = "Light"
         self.theme_cls.material_style = "M3"
         Logger.info("InvestCalcApp: Theme configured")
@@ -93,7 +111,6 @@ class InvestCalcApp(MDApp):
 
     def on_start(self):
         Logger.info("InvestCalcApp: Application started successfully")
-        self._show_welcome_dialog()
 
     def open_average_calculator(self):
         from presentation.views.average_view import AverageView
@@ -116,30 +133,11 @@ class InvestCalcApp(MDApp):
     def show_under_construction(self):
         dialog = MDDialog(
             MDDialogHeadlineText(text="В разработке"),
-            MDDialogSupportingText(text="Этот раздел находится в разработке и будет доступен позже."),
+            MDDialogSupportingText(text="Этот раздел будет доступен позже."),
             MDDialogButtonContainer(
                 MDButton(
                     MDButtonText(text="OK"),
                     style="text",
-                    on_release=lambda x: dialog.dismiss()
-                )
-            )
-        )
-        dialog.open()
-
-    def _show_welcome_dialog(self):
-        dialog = MDDialog(
-            MDDialogHeadlineText(text="InvestCalc v0.1.0"),
-            MDDialogSupportingText(
-                text="Добро пожаловать в инвестиционный калькулятор!\n\n"
-                     "• Расчет средней цены позиции\n"
-                     "• Калькулятор дивидендов\n"
-                     "• Расчет прибыли/убытка"
-            ),
-            MDDialogButtonContainer(
-                MDButton(
-                    MDButtonText(text="Продолжить"),
-                    style="filled",
                     on_release=lambda x: dialog.dismiss()
                 )
             )
